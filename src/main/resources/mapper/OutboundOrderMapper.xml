@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.crm.mapper.OutboundOrderMapper">
+
+    <!-- ==================== 分页查询出库单：联表查操作人、审核人 login_name ==================== -->
+    <select id="selectOutboundPage" resultType="com.example.crm.entity.OutboundOrder">
+        SELECT
+        oo.*,
+        operator.login_name AS operator_name,
+        auditor.login_name AS auditor_name
+        FROM outbound_order oo
+        LEFT JOIN sys_user operator ON oo.operator_id = operator.id AND operator.is_deleted = 0
+        LEFT JOIN sys_user auditor ON oo.auditor_id = auditor.id AND auditor.is_deleted = 0
+        WHERE oo.is_deleted = 0
+        <if test="receiverName != null and receiverName != ''">
+            AND oo.receiver_name LIKE CONCAT('%', #{receiverName}, '%')
+        </if>
+        <if test="auditStatus != null">
+            AND oo.audit_status = #{auditStatus}
+        </if>
+        <if test="outboundTimeStart != null and outboundTimeStart != ''">
+            AND oo.outbound_time &gt;= #{outboundTimeStart}
+        </if>
+        <if test="outboundTimeEnd != null and outboundTimeEnd != ''">
+            AND oo.outbound_time &lt;= #{outboundTimeEnd}
+        </if>
+        ORDER BY oo.outbound_time DESC
+    </select>
+
+</mapper>

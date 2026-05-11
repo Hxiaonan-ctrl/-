@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.crm.mapper.DrugMapper">
+    <!-- 基础字段复用片段 -->
+    <sql id="Base_Column_List">
+        drug_id, drug_name, approval_no, specification, manufacturer,
+        drug_category, initial_stock, stock_warning, create_time, update_time
+    </sql>
+
+    <!-- 药品库存VO结果映射 -->
+    <resultMap id="DrugStockResultMap" type="com.example.crm.vo.DrugStockVO">
+        <result column="drug_id" property="drugId"/>
+        <result column="drug_name" property="drugName"/>
+        <result column="approval_no" property="approvalNo"/>
+        <result column="specification" property="specification"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="drug_category" property="drugCategory"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="current_stock" property="currentStock"/>
+        <result column="stock_warning" property="stockWarning"/>
+        <result column="expiry_date" property="expiryDate"/>
+        <result column="expiry_warning_days" property="expiryWarningDays"/>
+        <result column="create_time" property="createTime"/>
+        <result column="stock_warning_flag" property="stockWarningFlag"/>
+        <result column="expiry_warning_flag" property="expiryWarningFlag"/>
+    </resultMap>
+
+    <!-- 药品库存列表查询 -->
+    <select id="selectDrugStockList" resultMap="DrugStockResultMap">
+        SELECT
+        d.drug_id,
+        d.drug_name,
+        d.approval_no,
+        d.specification,
+        d.manufacturer,
+        d.drug_category,
+        db.batch_no,
+        db.current_stock,
+        d.stock_warning,
+        db.expiry_date,
+        db.expiry_warning_days,
+        d.create_time,
+        CASE WHEN db.current_stock &lt; d.stock_warning THEN 1 ELSE 0 END AS stock_warning_flag,
+        CASE WHEN DATEDIFF(db.expiry_date, CURDATE()) &lt; db.expiry_warning_days THEN 1 ELSE 0 END AS expiry_warning_flag
+        FROM drug d
+        LEFT JOIN drug_batch db ON d.drug_id = db.drug_id
+        WHERE 1=1
+        <if test="drugName != null and drugName != ''">
+            AND d.drug_name LIKE CONCAT('%', #{drugName}, '%')
+        </if>
+        <if test="manufacturer != null and manufacturer != ''">
+            AND d.manufacturer LIKE CONCAT('%', #{manufacturer}, '%')
+        </if>
+        <if test="drugCategory != null and drugCategory != ''">
+            AND d.drug_category = #{drugCategory}
+        </if>
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <!-- 关键补充：药品库存总数统计（解决绑定失败核心问题） -->
+    <select id="selectDrugStockCount" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT d.drug_id)
+        FROM drug d
+        LEFT JOIN drug_batch db ON d.drug_id = db.drug_id
+        WHERE 1=1
+        <if test="drugName != null and drugName != ''">
+            AND d.drug_name LIKE CONCAT('%', #{drugName}, '%')
+        </if>
+        <if test="manufacturer != null and manufacturer != ''">
+            AND d.manufacturer LIKE CONCAT('%', #{manufacturer}, '%')
+        </if>
+        <if test="drugCategory != null and drugCategory != ''">
+            AND d.drug_category = #{drugCategory}
+        </if>
+    </select>
+
+    <!-- 药品详情查询 -->
+    <select id="selectDrugDetailById" parameterType="java.lang.Long" resultMap="DrugStockResultMap">
+        SELECT
+            d.drug_id,
+            d.drug_name,
+            d.approval_no,
+            d.specification,
+            d.manufacturer,
+            d.drug_category,
+            db.batch_no,
+            db.current_stock,
+            d.stock_warning,
+            db.expiry_date,
+            db.expiry_warning_days,
+            d.create_time,
+            CASE WHEN db.current_stock &lt; d.stock_warning THEN 1 ELSE 0 END AS stock_warning_flag,
+            CASE WHEN DATEDIFF(db.expiry_date, CURDATE()) &lt; db.expiry_warning_days THEN 1 ELSE 0 END AS expiry_warning_flag
+        FROM drug d
+                 LEFT JOIN drug_batch db ON d.drug_id = db.drug_id
+        WHERE d.drug_id = #{drugId}
+    </select>
+</mapper>

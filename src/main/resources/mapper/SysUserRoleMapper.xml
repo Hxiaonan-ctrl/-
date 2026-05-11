@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace 必须与 Mapper 接口全类名完全一致 -->
+<mapper namespace="com.example.crm.mapper.SysUserRoleMapper">
+
+    <!-- 批量插入用户-角色关联（含创建时间） -->
+    <insert id="batchInsert">
+        INSERT INTO sys_user_role (user_id, role_id, create_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.userId}, #{item.roleId}, NOW())
+        </foreach>
+    </insert>
+
+    <!-- 根据用户ID删除所有关联角色（RolePermissionService 必需） -->
+    <delete id="deleteByUserId">
+        DELETE FROM sys_user_role WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 可选：根据用户ID查询关联的角色ID（用于回显已选角色） -->
+    <select id="selectRoleIdsByUserId" resultType="java.lang.Long">
+        SELECT role_id FROM sys_user_role WHERE user_id = #{userId}
+    </select>
+
+</mapper>

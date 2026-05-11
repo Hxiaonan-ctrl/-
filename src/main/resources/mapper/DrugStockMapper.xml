@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace必须与Mapper接口全路径一致 -->
+<mapper namespace="com.example.crm.mapper.DrugStockMapper">
+
+    <!-- 结果映射：type必须写VO全类名，避免类加载冲突 -->
+    <resultMap id="DrugStockResultMap" type="com.example.crm.vo.DrugStockVO">
+        <result column="drug_id" property="drugId"/>
+        <result column="drug_name" property="drugName"/>
+        <result column="approval_no" property="approvalNo"/>
+        <result column="specification" property="specification"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="drug_category" property="drugCategory"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="current_stock" property="currentStock"/>
+        <result column="stock_warning" property="stockWarning"/>
+        <result column="expiry_date" property="expiryDate"/>
+        <result column="expiry_warning_days" property="expiryWarningDays"/>
+        <result column="create_time" property="createTime"/>
+        <result column="stock_warning_flag" property="stockWarningFlag"/>
+        <result column="expiry_warning_flag" property="expiryWarningFlag"/>
+    </resultMap>
+
+    <!-- 分页查询药品库存列表：用CDATA包裹含特殊字符的SQL -->
+    <select id="selectDrugStockList" resultMap="DrugStockResultMap">
+        <![CDATA[
+        SELECT
+            d.drug_id, d.drug_name, d.approval_no, d.specification,
+            d.manufacturer, d.drug_category, db.batch_no, db.current_stock,
+            d.stock_warning, db.expiry_date, db.expiry_warning_days, d.create_time,
+            CASE WHEN db.current_stock < d.stock_warning THEN 1 ELSE 0 END AS stock_warning_flag,
+            CASE WHEN DATEDIFF(db.expiry_date, CURDATE()) < db.expiry_warning_days THEN 1 ELSE 0 END AS expiry_warning_flag
+        FROM drug d
+                 LEFT JOIN drug_batch db ON d.drug_id = db.drug_id
+        WHERE 1=1
+        LIMIT #{limit} OFFSET #{offset}
+        ]]>
+    </select>
+
+    <!-- 查询库存预警列表：CDATA包裹特殊字符 -->
+    <select id="selectStockWarningList" resultMap="DrugStockResultMap">
+        <![CDATA[
+        SELECT
+            d.drug_id, d.drug_name, d.approval_no, d.specification,
+            d.manufacturer, d.drug_category, db.batch_no, db.current_stock,
+            d.stock_warning, db.expiry_date, db.expiry_warning_days, d.create_time,
+            1 AS stock_warning_flag,
+            CASE WHEN DATEDIFF(db.expiry_date, CURDATE()) < db.expiry_warning_days THEN 1 ELSE 0 END AS expiry_warning_flag
+        FROM drug d
+                 LEFT JOIN drug_batch db ON d.drug_id = db.drug_id
+        WHERE db.current_stock < d.stock_warning
+        ]]>
+    </select>
+
+    <!-- 查询效期预警列表：CDATA包裹特殊字符 -->
+    <select id="selectExpiryWarningList" resultMap="DrugStockResultMap">
+        <![CDATA[
+        SELECT
+            d.drug_id, d.drug_name, d.approval_no, d.specification,
+            d.manufacturer, d.drug_category, db.batch_no, db.current_stock,
+            d.stock_warning, db.expiry_date, db.expiry_warning_days, d.create_time,
+            CASE WHEN db.current_stock < d.stock_warning THEN 1 ELSE 0 END AS stock_warning_flag,
+            1 AS expiry_warning_flag
+        FROM drug d
+                 LEFT JOIN drug_batch db ON d.drug_id = db.drug_id
+        WHERE DATEDIFF(db.expiry_date, CURDATE()) < db.expiry_warning_days
+        ]]>
+    </select>
+
+</mapper>

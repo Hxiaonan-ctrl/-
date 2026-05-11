@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.crm.mapper.WarehousingOrderMapper">
+
+    <!-- ==================== 分页查询入库单（使用 login_name） ==================== -->
+    <select id="selectWarehousingPage" resultType="com.example.crm.entity.WarehousingOrder">
+        SELECT
+        wo.warehousing_id,
+        wo.purchase_id,
+        wo.operator_id,
+        wo.warehousing_time,
+        wo.audit_status,
+        wo.auditor_id,
+        wo.audit_time,
+        wo.remarks,
+        wo.create_time,
+        wo.update_time,
+        wo.is_deleted,
+        -- 【关键修改】使用 login_name
+        operator.login_name AS operator_name,
+        auditor.login_name AS auditor_name
+        FROM warehousing_order wo
+        LEFT JOIN purchase_order po ON wo.purchase_id = po.purchase_id
+        LEFT JOIN sys_user operator ON wo.operator_id = operator.id AND operator.is_deleted = 0
+        LEFT JOIN sys_user auditor ON wo.auditor_id = auditor.id AND auditor.is_deleted = 0
+        WHERE wo.is_deleted = 0
+        <if test="purchaseNo != null and purchaseNo != ''">
+            AND po.order_no LIKE CONCAT('%', #{purchaseNo}, '%')
+        </if>
+        <if test="auditStatus != null">
+            AND wo.audit_status = #{auditStatus}
+        </if>
+        <if test="warehousingTimeStart != null and warehousingTimeStart != ''">
+            AND wo.warehousing_time &gt;= #{warehousingTimeStart}
+        </if>
+        <if test="warehousingTimeEnd != null and warehousingTimeEnd != ''">
+            AND wo.warehousing_time &lt;= #{warehousingTimeEnd}
+        </if>
+        ORDER BY wo.create_time DESC
+    </select>
+
+    <!-- ==================== 入库单详情ResultMap（保持不变） ==================== -->
+    <resultMap id="WarehousingOrderDetailMap" type="com.example.crm.entity.WarehousingOrder">
+        <id column="warehousing_id" property="warehousingId"/>
+        <result column="purchase_id" property="purchaseId"/>
+        <result column="operator_id" property="operatorId"/>
+        <result column="warehousing_time" property="warehousingTime"/>
+        <result column="audit_status" property="auditStatus"/>
+        <result column="auditor_id" property="auditorId"/>
+        <result column="audit_time" property="auditTime"/>
+        <result column="remarks" property="remarks"/>
+        <result column="wo_create_time" property="createTime"/>
+        <result column="wo_update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+
+        <collection property="items" ofType="com.example.crm.entity.WarehousingOrderItem">
+            <id column="item_id" property="itemId"/>
+            <result column="woi_warehousing_id" property="warehousingId"/>
+            <result column="batch_id" property="batchId"/>
+            <result column="actual_in_qty" property="actualInQty"/>
+            <result column="woi_create_time" property="createTime"/>
+            <result column="drug_id" property="drugId"/>
+            <result column="batch_no" property="batchNo"/>
+            <result column="production_date" property="productionDate"/>
+            <result column="expiry_date" property="expiryDate"/>
+            <result column="drug_name" property="drugName"/>
+            <result column="specification" property="specification"/>
+        </collection>
+    </resultMap>
+
+    <!-- ==================== 查询入库单详情（保持不变） ==================== -->
+    <select id="getWarehousingDetail" resultMap="WarehousingOrderDetailMap">
+        SELECT
+            wo.warehousing_id,
+            wo.purchase_id,
+            wo.operator_id,
+            wo.warehousing_time,
+            wo.audit_status,
+            wo.auditor_id,
+            wo.audit_time,
+            wo.remarks,
+            wo.create_time AS wo_create_time,
+            wo.update_time AS wo_update_time,
+            wo.is_deleted,
+            woi.item_id,
+            woi.warehousing_id AS woi_warehousing_id,
+            woi.batch_id,
+            woi.actual_in_qty,
+            woi.create_time AS woi_create_time,
+            db.drug_id,
+            db.batch_no,
+            db.production_date,
+            db.expiry_date,
+            d.drug_name,
+            d.specification
+        FROM warehousing_order wo
+                 LEFT JOIN warehousing_order_item woi ON wo.warehousing_id = woi.warehousing_id
+                 LEFT JOIN drug_batch db ON woi.batch_id = db.batch_id
+                 LEFT JOIN drug d ON db.drug_id = d.drug_id
+        WHERE wo.warehousing_id = #{warehousingId}
+          AND wo.is_deleted = 0
+    </select>
+
+</mapper>

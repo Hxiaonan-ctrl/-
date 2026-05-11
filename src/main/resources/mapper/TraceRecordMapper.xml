@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.crm.mapper.TraceRecordMapper">
+    <!-- 追溯记录结果映射：新增审核相关字段 -->
+    <resultMap id="TraceRecordResultMap" type="com.example.crm.entity.TraceRecord">
+        <result column="trace_id" property="traceId"/>
+        <result column="drug_id" property="drugId"/>
+        <result column="batch_id" property="batchId"/>
+        <result column="document_type" property="documentType"/>
+        <result column="document_id" property="documentId"/>
+        <result column="operator_id" property="operatorId"/>
+        <result column="operation_time" property="operationTime"/>
+        <result column="quantity_change" property="quantityChange"/>
+        <result column="flow_node" property="flowNode"/>
+        <result column="drug_name" property="drugName"/>
+        <result column="batch_no" property="batchNo"/>
+        <!-- 新增：审核相关字段映射 -->
+        <result column="audit_status" property="auditStatus"/>
+        <result column="auditor_id" property="auditorId"/>
+        <result column="audit_time" property="auditTime"/>
+        <result column="audit_remark" property="auditRemark"/>
+        <result column="auditor_name" property="auditorName"/> <!-- 审核人名称（非数据库字段） -->
+    </resultMap>
+
+    <!-- 分页查询追溯记录（含审核状态筛选+审核字段查询） -->
+    <select id="selectTraceRecordList" resultMap="TraceRecordResultMap">
+        SELECT
+        tr.trace_id, tr.drug_id, tr.batch_id, tr.document_type,
+        tr.document_id, tr.operator_id, tr.operation_time,
+        tr.quantity_change, tr.flow_node, d.drug_name, db.batch_no,
+        <!-- 新增：查询审核相关字段 -->
+        tr.audit_status, tr.auditor_id, tr.audit_time, tr.audit_remark,
+        su2.login_name AS auditor_name <!-- 审核人名称 -->
+        FROM trace_record tr
+        LEFT JOIN drug d ON tr.drug_id = d.drug_id
+        LEFT JOIN drug_batch db ON tr.batch_id = db.batch_id
+        LEFT JOIN sys_user su ON tr.operator_id = su.id <!-- 操作人 -->
+        LEFT JOIN sys_user su2 ON tr.auditor_id = su2.id <!-- 新增：关联审核人表 -->
+        WHERE 1=1
+        <if test="drugId != null">
+            AND tr.drug_id = #{drugId}
+        </if>
+        <if test="batchId != null">
+            AND tr.batch_id = #{batchId}
+        </if>
+        <if test="documentType != null and documentType != ''">
+            AND tr.document_type = #{documentType}
+        </if>
+        <if test="drugName != null and drugName != ''">
+            AND d.drug_name LIKE CONCAT('%', #{drugName}, '%')
+        </if>
+        <if test="batchNo != null and batchNo != ''">
+            AND db.batch_no LIKE CONCAT('%', #{batchNo}, '%')
+        </if>
+        <if test="operatorName != null and operatorName != ''">
+            AND su.login_name LIKE CONCAT('%', #{operatorName}, '%')
+        </if>
+        <if test="flowNode != null and flowNode != ''">
+            AND tr.flow_node LIKE CONCAT('%', #{flowNode}, '%')
+        </if>
+        <if test="operationTimeStart != null">
+            AND tr.operation_time &gt;= #{operationTimeStart}
+        </if>
+        <if test="operationTimeEnd != null">
+            AND tr.operation_time &lt;= #{operationTimeEnd}
+        </if>
+        <!-- 新增：审核状态筛选条件 -->
+        <if test="auditStatus != null">
+            AND tr.audit_status = #{auditStatus}
+        </if>
+        ORDER BY tr.operation_time DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <!-- 查询符合条件的总记录数（含审核状态筛选） -->
+    <select id="selectTraceRecordCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM trace_record tr
+        LEFT JOIN drug d ON tr.drug_id = d.drug_id
+        LEFT JOIN drug_batch db ON tr.batch_id = db.batch_id
+        LEFT JOIN sys_user su ON tr.operator_id = su.id
+        LEFT JOIN sys_user su2 ON tr.auditor_id = su2.id <!-- 不影响计数，仅保持表关联一致 -->
+        WHERE 1=1
+        <if test="drugId != null">
+            AND tr.drug_id = #{drugId}
+        </if>
+        <if test="batchId != null">
+            AND tr.batch_id = #{batchId}
+        </if>
+        <if test="documentType != null and documentType != ''">
+            AND tr.document_type = #{documentType}
+        </if>
+        <if test="drugName != null and drugName != ''">
+            AND d.drug_name LIKE CONCAT('%', #{drugName}, '%')
+        </if>
+        <if test="batchNo != null and batchNo != ''">
+            AND db.batch_no LIKE CONCAT('%', #{batchNo}, '%')
+        </if>
+        <if test="operatorName != null and operatorName != ''">
+            AND su.login_name LIKE CONCAT('%', #{operatorName}, '%')
+        </if>
+        <if test="flowNode != null and flowNode != ''">
+            AND tr.flow_node LIKE CONCAT('%', #{flowNode}, '%')
+        </if>
+        <if test="operationTimeStart != null">
+            AND tr.operation_time &gt;= #{operationTimeStart}
+        </if>
+        <if test="operationTimeEnd != null">
+            AND tr.operation_time &lt;= #{operationTimeEnd}
+        </if>
+        <!-- 新增：审核状态筛选条件 -->
+        <if test="auditStatus != null">
+            AND tr.audit_status = #{auditStatus}
+        </if>
+    </select>
+</mapper>

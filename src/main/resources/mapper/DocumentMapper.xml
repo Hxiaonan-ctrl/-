@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 必须和你的DocumentMapper接口全类名一致 -->
+<mapper namespace="com.example.crm.mapper.DocumentMapper">
+
+    <!-- 适配你的三张单据表：采购单/入库单/出库单 -->
+    <select id="selectDocumentList" resultType="com.example.crm.vo.DocumentVO">
+        <!-- 联合查询三张单据表，统一返回为单据VO -->
+        SELECT
+        purchase_id AS documentId,
+        '采购单' AS documentType,
+        create_time AS createTime,
+        CASE order_status
+        WHEN 0 THEN '待审核'
+        WHEN 1 THEN '已通过'
+        WHEN 2 THEN '已到货'
+        WHEN 3 THEN '已完成'
+        END AS status
+        FROM purchase_order
+        <where>
+            <!-- 单据类型筛选：采购单 -->
+            <if test="documentType != null and documentType = '采购单'">
+                AND 1=1
+            </if>
+            <!-- 单据ID模糊匹配 -->
+            <if test="keyword != null and keyword != ''">
+                AND purchase_id LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <!-- 过滤已删除数据（如果有） -->
+            AND is_deleted = 0
+        </where>
+
+        UNION ALL
+
+        SELECT
+        warehousing_id AS documentId,
+        '入库单' AS documentType,
+        create_time AS createTime,
+        CASE audit_status
+        WHEN 0 THEN '待审核'
+        WHEN 1 THEN '已通过'
+        END AS status
+        FROM warehousing_order
+        <where>
+            <if test="documentType != null and documentType = '入库单'">
+                AND 1=1
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND warehousing_id LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+
+        UNION ALL
+
+        SELECT
+        outbound_id AS documentId,
+        '出库单' AS documentType,
+        create_time AS createTime,
+        CASE audit_status
+        WHEN 0 THEN '待审核'
+        WHEN 1 THEN '已通过'
+        END AS status
+        FROM outbound_order
+        <where>
+            <if test="documentType != null and documentType = '出库单'">
+                AND 1=1
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND outbound_id LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            AND is_deleted = 0
+        </where>
+
+        ORDER BY createTime DESC
+    </select>
+
+</mapper>

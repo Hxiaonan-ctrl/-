@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.crm.mapper.PurchaseOrderMapper">
+
+    <!-- ==================== 分页查询采购单（使用 login_name） ==================== -->
+    <select id="selectPurchasePage" resultType="com.example.crm.entity.PurchaseOrder">
+        SELECT
+        po.*,
+        purchaser.login_name AS purchaser_name,
+        auditor.login_name AS auditor_name
+        FROM purchase_order po
+        LEFT JOIN sys_user purchaser ON po.purchaser_id = purchaser.id AND purchaser.is_deleted = 0
+        LEFT JOIN sys_user auditor ON po.auditor_id = auditor.id AND auditor.is_deleted = 0
+        WHERE po.is_deleted = 0
+        <if test="supplierName != null and supplierName != ''">
+            AND po.supplier_name LIKE CONCAT('%', #{supplierName}, '%')
+        </if>
+        <if test="orderStatus != null">
+            AND po.order_status = #{orderStatus}
+        </if>
+        <if test="createTimeStart != null and createTimeStart != ''">
+            AND po.create_time &gt;= #{createTimeStart}
+        </if>
+        <if test="createTimeEnd != null and createTimeEnd != ''">
+            AND po.create_time &lt;= #{createTimeEnd}
+        </if>
+        ORDER BY po.create_time DESC
+    </select>
+
+</mapper>

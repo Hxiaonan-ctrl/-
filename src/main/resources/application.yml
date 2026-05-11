@@ -1,0 +1,75 @@
+# 服务器配置
+server:
+  port: 8088
+  servlet:
+    context-path: /
+  tomcat:
+    uri-encoding: UTF-8
+  encoding:
+    charset: UTF-8
+    force: true
+
+# Spring配置
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/crm?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root  # 按需修改为你的数据库账号
+    password: admin  # 按需修改为你的数据库密码
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1 FROM DUAL
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      # Druid监控配置
+      stat-view-servlet:
+        enabled: true
+        url-pattern: /druid/*
+        login-username: admin
+        login-password: admin
+        reset-enable: false
+      web-stat-filter:
+        enabled: true
+        url-pattern: /*
+        exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
+
+# MyBatis-Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true  # 下划线转驼峰（核心）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印SQL
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+    call-setters-on-nulls: true  # 允许null值调用setter
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.crm.entity,com.example.crm.vo  # 包含VO包
+
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:myqe9iks6mGV4SDIcbBnwpt8mzkt8OGzdjwiZzS5xnXoYHQPn+z/85J/irgEwAki3UdqBoRS6uvu8xibJ0GJfg==}
+  expire: 86400000
+  header: Authorization
+  prefix: Bearer
+
+# 日志配置
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
+  level:
+    com.example.crm.mapper: DEBUG
+    org.springframework.web: INFO
+    org.springframework.security: INFO
+    com.alibaba.druid: INFO
